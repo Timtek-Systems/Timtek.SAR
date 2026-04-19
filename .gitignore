@@ -76,3 +76,7 @@ documentation/**/backlog.csv
 # Docker persistent volumes
 persistent-volumes/
 test_*.db
+sar.db
+sar.db-shm
+sar.db-wal
+.NCrunch_*
