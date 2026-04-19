@@ -1,0 +1,74 @@
+## .NET
+*.swp
+*.*~
+project.lock.json
+.DS_Store
+*.pyc
+nupkg/
+
+# Visual Studio
+.vs/
+bin/
+obj/
+_ReSharper*/
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.[Cc]ache
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.dbmdl
+*.dbproj.schemaview
+*.jfm
+*.pfx
+*.publishsettings
+*.pubxml
+!**/PublishProfiles/*.pubxml
+
+# NuGet
+*.nupkg
+**/[Pp]ackages/*
+!**/packages/build/
+*.nuget.props
+*.nuget.targets
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Ll]og/
+[Ll]ogs/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Rider
+.idea/
+
+# dotnet tool
+.config/dotnet-tools.json
+
+# User secrets
+secrets.json
+
+# Obsidian workspace (per-user state)
+documentation/**/.obsidian/workspace.json
+documentation/**/.obsidian/workspace-mobile.json
+
+# Backlog CSV (managed via GitHub Issues now)
+documentation/**/backlog.csv
+
+# Secrets / tokens
+**/rovo-token
+**/*token*
+!**/*.md
