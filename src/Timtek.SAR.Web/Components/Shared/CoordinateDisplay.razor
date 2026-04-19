@@ -1,0 +1,46 @@
+@using Timtek.SAR.Application.Geospatial
+@using Timtek.SAR.Domain.ValueObjects
+@inject IWhat3WordsService What3WordsService
+
+<span class="coordinate-display">
+    <span class="gps-coordinate">@Latitude.ToString("F6"), @Longitude.ToString("F6")</span>
+    @if (_w3wAddress is not null)
+    {
+        <br />
+        <span class="w3w-address text-muted">
+            <small>@_w3wAddress</small>
+        </span>
+    }
+    else if (_loading)
+    {
+        <br />
+        <span class="w3w-loading text-muted"><small>Loading W3W...</small></span>
+    }
+</span>
+
+@code {
+    [Parameter, EditorRequired] public double Latitude { get; set; }
+    [Parameter, EditorRequired] public double Longitude { get; set; }
+
+    string? _w3wAddress;
+    bool _loading;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        try
+        {
+            var coordinate = new GpsCoordinate(Latitude, Longitude);
+            var address = await What3WordsService.ConvertToAddressAsync(coordinate);
+            _w3wAddress = address.ToString();
+        }
+        catch
+        {
+            _w3wAddress = null;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

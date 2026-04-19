@@ -4,7 +4,9 @@
 @using System.Security.Claims
 @using Timtek.SAR.Application.CaseManagement
 @using Timtek.SAR.Application.CaseManagement.Dtos
+@using Timtek.SAR.Application.Geospatial
 @using Timtek.SAR.Domain.Enums
+@using Timtek.SAR.Web.Components.Shared
 @attribute [Authorize]
 @rendermode InteractiveServer
 @inject ICaseService CaseService
@@ -148,10 +150,10 @@ else
                 <div class="card-header">Location & Timing</div>
                 <div class="card-body">
                     <dl class="row mb-0">
-                        <dt class="col-sm-5">Latitude</dt>
-                        <dd class="col-sm-7">@_case.LastKnownLatitude</dd>
-                        <dt class="col-sm-5">Longitude</dt>
-                        <dd class="col-sm-7">@_case.LastKnownLongitude</dd>
+                        <dt class="col-sm-5">Coordinates</dt>
+                        <dd class="col-sm-7">
+                            <CoordinateDisplay Latitude="@_case.LastKnownLatitude" Longitude="@_case.LastKnownLongitude" />
+                        </dd>
                         <dt class="col-sm-5">Last Seen</dt>
                         <dd class="col-sm-7">@_case.DateTimeLastSeen.ToString("dd MMM yyyy HH:mm")</dd>
                         <dt class="col-sm-5">Reported</dt>
@@ -162,7 +164,22 @@ else
         </div>
         <div class="col-md-6">
             <div class="card h-100">
-                <div class="card-header">Notes</div>
+                <div class="card-header">Last Known Location</div>
+                <div class="card-body p-0">
+                    <LeafletMap Latitude="@_case.LastKnownLatitude"
+                                Longitude="@_case.LastKnownLongitude"
+                                Zoom="15"
+                                Height="250px"
+                                MarkerPopup="@($"{_case.AnimalSpecies} — {_case.ReferenceNumber}")" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">Medical & Behavioural Notes</div>
                 <div class="card-body">
                     <dl class="row mb-0">
                         <dt class="col-sm-5">Medical</dt>

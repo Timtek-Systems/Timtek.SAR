@@ -1,0 +1,59 @@
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div id="@_elementId" style="height: @Height; width: 100%; z-index: 0;"></div>
+
+@code {
+    [Parameter] public double Latitude { get; set; }
+    [Parameter] public double Longitude { get; set; }
+    [Parameter] public int Zoom { get; set; } = 13;
+    [Parameter] public string Height { get; set; } = "400px";
+    [Parameter] public string? MarkerPopup { get; set; }
+    [Parameter] public bool Draggable { get; set; }
+    [Parameter] public EventCallback<(double Lat, double Lng)> OnLocationChanged { get; set; }
+
+    string _elementId = $"map-{Guid.NewGuid():N}";
+    DotNetObjectReference<LeafletMap>? _dotNetRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("leafletInterop.initialize", _elementId, Latitude, Longitude, Zoom);
+
+            if (Draggable)
+            {
+                _dotNetRef = DotNetObjectReference.Create(this);
+                await JS.InvokeVoidAsync("leafletInterop.addDraggableMarker",
+                    _elementId, Latitude, Longitude, _dotNetRef);
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("leafletInterop.addMarker",
+                    _elementId, Latitude, Longitude, MarkerPopup);
+            }
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnMarkerDragged(double lat, double lng)
+    {
+        if (OnLocationChanged.HasDelegate)
+            await OnLocationChanged.InvokeAsync((lat, lng));
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("leafletInterop.dispose", _elementId);
+        }
+        catch (JSDisconnectedException)
+        {
+            // Circuit disconnected, nothing to clean up
+        }
+
+        _dotNetRef?.Dispose();
+    }
+}

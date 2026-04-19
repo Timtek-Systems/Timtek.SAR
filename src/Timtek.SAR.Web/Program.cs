@@ -20,6 +20,7 @@ builder.Services.AddSarInfrastructure(options =>
 builder.Services.AddScoped<IOrganisationService, OrganisationService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ICaseService, CaseService>();
+builder.Services.AddWhat3Words(builder.Configuration["What3Words:ApiKey"]);
 
 builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
     .AddCookie(IdentityConstants.ApplicationScheme, options =>

@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Timtek.Patterns.DataAccess;
+using Timtek.SAR.Application.Geospatial;
 using Timtek.SAR.Domain.Entities;
+using Timtek.SAR.Infrastructure.Geospatial;
 using Timtek.SAR.Infrastructure.Persistence;
 
 namespace Timtek.SAR.Infrastructure.DependencyInjection;
@@ -35,6 +37,24 @@ public static class InfrastructureServiceCollectionExtensions
             })
             .AddRoles<ApplicationRole>()
             .AddEntityFrameworkStores<SarDbContext>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddWhat3Words(
+        this IServiceCollection services,
+        string? apiKey)
+    {
+        if (!string.IsNullOrWhiteSpace(apiKey))
+        {
+            services.Configure<What3WordsOptions>(o => o.ApiKey = apiKey);
+            services.AddHttpClient<IWhat3WordsService, What3WordsApiClient>(client =>
+                client.BaseAddress = new Uri("https://api.what3words.com/v3/"));
+        }
+        else
+        {
+            services.AddSingleton<IWhat3WordsService, StubWhat3WordsService>();
+        }
 
         return services;
     }

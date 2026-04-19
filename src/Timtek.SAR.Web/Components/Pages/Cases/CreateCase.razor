@@ -5,6 +5,7 @@
 @using Timtek.SAR.Application.CaseManagement
 @using Timtek.SAR.Application.CaseManagement.Dtos
 @using Timtek.SAR.Application.OrganisationManagement
+@using Timtek.SAR.Web.Components.Shared
 @attribute [Authorize]
 @rendermode InteractiveServer
 @inject ICaseService CaseService
@@ -68,6 +69,15 @@
             <InputDate Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="_model.DateTimeLastSeen" />
             <ValidationMessage For="() => _model.DateTimeLastSeen" />
         </div>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Click or drag the marker to set location</label>
+        <LeafletMap Latitude="@_model.LastKnownLatitude"
+                    Longitude="@_model.LastKnownLongitude"
+                    Zoom="13"
+                    Height="300px"
+                    Draggable="true"
+                    OnLocationChanged="OnLocationChanged" />
     </div>
 
     <h5 class="mt-3 mb-2">Owner Contact</h5>
@@ -174,13 +184,20 @@
         public string? AnimalColour { get; set; }
         public string? AnimalSize { get; set; }
         public string? AnimalDistinguishingFeatures { get; set; }
-        public double LastKnownLatitude { get; set; }
-        public double LastKnownLongitude { get; set; }
+        public double LastKnownLatitude { get; set; } = 51.5074;
+        public double LastKnownLongitude { get; set; } = -0.1278;
         public DateTime DateTimeLastSeen { get; set; } = DateTime.Now;
         public string OwnerName { get; set; } = "";
         public string? OwnerPhone { get; set; }
         public string OwnerEmail { get; set; } = "";
         public string? MedicalNotes { get; set; }
         public string? BehaviouralNotes { get; set; }
+    }
+
+    private void OnLocationChanged((double Lat, double Lng) location)
+    {
+        _model.LastKnownLatitude = Math.Round(location.Lat, 6);
+        _model.LastKnownLongitude = Math.Round(location.Lng, 6);
+        StateHasChanged();
     }
 }
