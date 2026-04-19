@@ -17,6 +17,9 @@
                     </li>
                     <AuthorizeView>
                         <Authorized>
+                            <li class="nav-item">
+                                <NavLink class="nav-link" href="/cases">Cases</NavLink>
+                            </li>
                             <AuthorizeView Roles="Administrator" Context="adminAuth">
                                 <li class="nav-item">
                                     <NavLink class="nav-link" href="/admin/organisation">Organisation</NavLink>

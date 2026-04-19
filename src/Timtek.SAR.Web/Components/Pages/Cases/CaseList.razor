@@ -1,0 +1,132 @@
+@page "/cases"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Timtek.SAR.Application.CaseManagement
+@using Timtek.SAR.Application.CaseManagement.Dtos
+@using Timtek.SAR.Application.OrganisationManagement
+@using Timtek.SAR.Domain.Enums
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject ICaseService CaseService
+@inject IOrganisationService OrganisationService
+@inject NavigationManager Navigation
+
+<PageTitle>Cases — Timtek SAR</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Cases</h2>
+    <a href="/cases/create" class="btn btn-primary">Report New Case</a>
+</div>
+
+@if (_loading)
+{
+    <p>Loading cases…</p>
+}
+else if (_cases.Count == 0)
+{
+    <div class="alert alert-info">No cases found. <a href="/cases/create">Report a new case</a> to get started.</div>
+}
+else
+{
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <select class="form-select" @bind="_statusFilter">
+                <option value="">All Statuses</option>
+                @foreach (var status in Enum.GetValues<CaseStatus>())
+                {
+                    <option value="@status">@status</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" @bind="_priorityFilter">
+                <option value="">All Priorities</option>
+                @foreach (var priority in Enum.GetValues<CasePriority>())
+                {
+                    <option value="@priority">@priority</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>Reference</th>
+                <th>Species</th>
+                <th>Owner</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in FilteredCases)
+            {
+                <tr>
+                    <td><a href="/cases/@c.Id">@c.ReferenceNumber</a></td>
+                    <td>@c.AnimalSpecies</td>
+                    <td>@c.OwnerName</td>
+                    <td><span class="badge @StatusBadgeClass(c.Status)">@c.Status</span></td>
+                    <td>
+                        @if (c.Priority.HasValue)
+                        {
+                            <span class="badge @PriorityBadgeClass(c.Priority.Value)">@c.Priority</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">—</span>
+                        }
+                    </td>
+                    <td>@c.CreatedAtUtc.ToString("dd MMM yyyy HH:mm")</td>
+                    <td>
+                        <a href="/cases/@c.Id" class="btn btn-sm btn-outline-primary">View</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<CaseDto> _cases = [];
+    private bool _loading = true;
+    private string _statusFilter = "";
+    private string _priorityFilter = "";
+
+    private IEnumerable<CaseDto> FilteredCases => _cases
+        .Where(c => string.IsNullOrEmpty(_statusFilter) || c.Status.ToString() == _statusFilter)
+        .Where(c => string.IsNullOrEmpty(_priorityFilter) || c.Priority?.ToString() == _priorityFilter)
+        .OrderByDescending(c => c.CreatedAtUtc);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var org = await OrganisationService.GetFirstOrganisationAsync();
+        if (org.Any())
+        {
+            _cases = (await CaseService.GetByOrganisationAsync(org.Single().Id)).ToList();
+        }
+        _loading = false;
+    }
+
+    static string StatusBadgeClass(CaseStatus status) => status switch
+    {
+        CaseStatus.Reported => "bg-warning text-dark",
+        CaseStatus.Triaged => "bg-info text-dark",
+        CaseStatus.ActiveSearch => "bg-primary",
+        CaseStatus.Suspended => "bg-secondary",
+        CaseStatus.Resolved => "bg-success",
+        _ => "bg-light text-dark",
+    };
+
+    static string PriorityBadgeClass(CasePriority priority) => priority switch
+    {
+        CasePriority.Critical => "bg-danger",
+        CasePriority.High => "bg-warning text-dark",
+        CasePriority.Medium => "bg-info text-dark",
+        CasePriority.Low => "bg-secondary",
+        _ => "bg-light text-dark",
+    };
+}

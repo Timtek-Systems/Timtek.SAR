@@ -15,4 +15,6 @@ public sealed class SarUnitOfWork : EntityFrameworkCoreUnitOfWork
     }
 
     public IRepository<Organisation, Guid> Organisations => new Repository<Organisation, Guid>(_context);
+    public IRepository<Case, Guid> Cases => new Repository<Case, Guid>(_context);
+    public IRepository<CaseActivityLog, Guid> CaseActivityLogs => new Repository<CaseActivityLog, Guid>(_context);
 }

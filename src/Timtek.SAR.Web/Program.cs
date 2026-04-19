@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TA.Utils.Core.Diagnostics;
+using Timtek.SAR.Application.CaseManagement;
 using Timtek.SAR.Application.OrganisationManagement;
 using Timtek.SAR.Application.UserManagement;
 using Timtek.SAR.Domain.Entities;
@@ -18,6 +19,7 @@ builder.Services.AddSarInfrastructure(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("SarDatabase") ?? "Data Source=sar.db"));
 builder.Services.AddScoped<IOrganisationService, OrganisationService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ICaseService, CaseService>();
 
 builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
     .AddCookie(IdentityConstants.ApplicationScheme, options =>

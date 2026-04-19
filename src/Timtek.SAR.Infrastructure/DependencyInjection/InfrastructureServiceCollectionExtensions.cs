@@ -18,6 +18,10 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<SarUnitOfWork>());
         services.AddScoped<IRepository<Organisation, Guid>>(sp =>
             sp.GetRequiredService<SarUnitOfWork>().Organisations);
+        services.AddScoped<IRepository<Case, Guid>>(sp =>
+            sp.GetRequiredService<SarUnitOfWork>().Cases);
+        services.AddScoped<IRepository<CaseActivityLog, Guid>>(sp =>
+            sp.GetRequiredService<SarUnitOfWork>().CaseActivityLogs);
 
         services.AddIdentityCore<ApplicationUser>(options =>
             {

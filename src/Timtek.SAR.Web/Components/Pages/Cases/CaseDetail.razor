@@ -1,0 +1,353 @@
+@page "/cases/{CaseId:guid}"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Timtek.SAR.Application.CaseManagement
+@using Timtek.SAR.Application.CaseManagement.Dtos
+@using Timtek.SAR.Domain.Enums
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject ICaseService CaseService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<PageTitle>Case Detail — Timtek SAR</PageTitle>
+
+@if (_loading)
+{
+    <p>Loading case…</p>
+}
+else if (_case is null)
+{
+    <div class="alert alert-warning">Case not found.</div>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-0">@_case.ReferenceNumber</h2>
+            <span class="badge @StatusBadgeClass(_case.Status) fs-6">@_case.Status</span>
+            @if (_case.Priority.HasValue)
+            {
+                <span class="badge @PriorityBadgeClass(_case.Priority.Value) fs-6 ms-1">@_case.Priority</span>
+            }
+            @if (_case.Outcome.HasValue)
+            {
+                <span class="badge bg-dark fs-6 ms-1">@_case.Outcome</span>
+            }
+        </div>
+        <a href="/cases" class="btn btn-outline-secondary">Back to Cases</a>
+    </div>
+
+    @if (_statusMessage is not null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @_statusMessage
+            <button type="button" class="btn-close" @onclick="() => _statusMessage = null"></button>
+        </div>
+    }
+
+    @if (_error is not null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @_error
+            <button type="button" class="btn-close" @onclick="() => _error = null"></button>
+        </div>
+    }
+
+    <!-- Status workflow actions -->
+    <div class="card mb-3">
+        <div class="card-header">Actions</div>
+        <div class="card-body d-flex flex-wrap gap-2">
+            @if (_case.Status == CaseStatus.Reported)
+            {
+                <button class="btn btn-info" @onclick="TriageAsync" disabled="@_processing">Triage</button>
+            }
+            @if (_case.Status == CaseStatus.Triaged)
+            {
+                <button class="btn btn-primary" @onclick="StartSearchAsync" disabled="@_processing">Start Active Search</button>
+            }
+            @if (_case.Status == CaseStatus.ActiveSearch)
+            {
+                <button class="btn btn-secondary" @onclick="SuspendAsync" disabled="@_processing">Suspend</button>
+            }
+            @if (_case.Status == CaseStatus.Suspended)
+            {
+                <button class="btn btn-primary" @onclick="StartSearchAsync" disabled="@_processing">Resume Search</button>
+            }
+            @if (_case.Status != CaseStatus.Resolved)
+            {
+                <div class="dropdown">
+                    <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown" disabled="@(_processing || _case.Status == CaseStatus.Reported)">
+                        Resolve
+                    </button>
+                    <ul class="dropdown-menu">
+                        @foreach (var outcome in Enum.GetValues<CaseOutcome>())
+                        {
+                            <li><button class="dropdown-item" @onclick="() => ResolveAsync(outcome)">@outcome</button></li>
+                        }
+                    </ul>
+                </div>
+
+                <!-- Priority selector -->
+                <div class="ms-auto d-flex align-items-center gap-2">
+                    <label class="form-label mb-0">Priority:</label>
+                    <select class="form-select form-select-sm" style="width: auto;" @onchange="OnPriorityChanged" disabled="@_processing">
+                        <option value="">Not Set</option>
+                        @foreach (var p in Enum.GetValues<CasePriority>())
+                        {
+                            <option value="@p" selected="@(_case.Priority == p)">@p</option>
+                        }
+                    </select>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Case details -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">Animal Details</div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Species</dt>
+                        <dd class="col-sm-7">@_case.AnimalSpecies</dd>
+                        <dt class="col-sm-5">Breed</dt>
+                        <dd class="col-sm-7">@(_case.AnimalBreed ?? "—")</dd>
+                        <dt class="col-sm-5">Colour</dt>
+                        <dd class="col-sm-7">@(_case.AnimalColour ?? "—")</dd>
+                        <dt class="col-sm-5">Size</dt>
+                        <dd class="col-sm-7">@(_case.AnimalSize ?? "—")</dd>
+                        <dt class="col-sm-5">Distinguishing Features</dt>
+                        <dd class="col-sm-7">@(_case.AnimalDistinguishingFeatures ?? "—")</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">Owner Contact</div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Name</dt>
+                        <dd class="col-sm-7">@_case.OwnerName</dd>
+                        <dt class="col-sm-5">Phone</dt>
+                        <dd class="col-sm-7">@(_case.OwnerPhone ?? "—")</dd>
+                        <dt class="col-sm-5">Email</dt>
+                        <dd class="col-sm-7">@_case.OwnerEmail</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">Location & Timing</div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Latitude</dt>
+                        <dd class="col-sm-7">@_case.LastKnownLatitude</dd>
+                        <dt class="col-sm-5">Longitude</dt>
+                        <dd class="col-sm-7">@_case.LastKnownLongitude</dd>
+                        <dt class="col-sm-5">Last Seen</dt>
+                        <dd class="col-sm-7">@_case.DateTimeLastSeen.ToString("dd MMM yyyy HH:mm")</dd>
+                        <dt class="col-sm-5">Reported</dt>
+                        <dd class="col-sm-7">@_case.CreatedAtUtc.ToString("dd MMM yyyy HH:mm")</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">Notes</div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Medical</dt>
+                        <dd class="col-sm-7">@(_case.MedicalNotes ?? "—")</dd>
+                        <dt class="col-sm-5">Behavioural</dt>
+                        <dd class="col-sm-7">@(_case.BehaviouralNotes ?? "—")</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add note -->
+    @if (_case.Status != CaseStatus.Resolved)
+    {
+        <div class="card mb-3">
+            <div class="card-header">Add Note</div>
+            <div class="card-body">
+                <div class="input-group">
+                    <InputText class="form-control" @bind-Value="_newNote" placeholder="Enter a note…" />
+                    <button class="btn btn-outline-primary" @onclick="AddNoteAsync" disabled="@(string.IsNullOrWhiteSpace(_newNote) || _processing)">
+                        Add Note
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Activity log -->
+    <div class="card mb-3">
+        <div class="card-header">Activity Log</div>
+        <div class="card-body p-0">
+            @if (_activityLog.Count == 0)
+            {
+                <p class="p-3 mb-0 text-muted">No activity recorded yet.</p>
+            }
+            else
+            {
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var log in _activityLog.OrderByDescending(l => l.TimestampUtc))
+                        {
+                            <tr>
+                                <td>@log.TimestampUtc.ToString("dd MMM yyyy HH:mm:ss")</td>
+                                <td><span class="badge bg-secondary">@log.ActivityType</span></td>
+                                <td>@log.Description</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid CaseId { get; set; }
+
+    private CaseDto? _case;
+    private List<CaseActivityLogDto> _activityLog = [];
+    private bool _loading = true;
+    private bool _processing;
+    private string? _statusMessage;
+    private string? _error;
+    private string _newNote = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCaseAsync();
+    }
+
+    private async Task LoadCaseAsync()
+    {
+        _loading = true;
+        var result = await CaseService.GetAsync(CaseId);
+        _case = result.Any() ? result.Single() : null;
+
+        if (_case is not null)
+        {
+            _activityLog = (await CaseService.GetActivityLogAsync(CaseId)).ToList();
+        }
+        _loading = false;
+    }
+
+    private async Task TriageAsync()
+    {
+        await ExecuteActionAsync(
+            () => CaseService.TriageAsync(CaseId),
+            "Case triaged successfully.");
+    }
+
+    private async Task StartSearchAsync()
+    {
+        await ExecuteActionAsync(
+            () => CaseService.StartActiveSearchAsync(CaseId),
+            "Active search started.");
+    }
+
+    private async Task SuspendAsync()
+    {
+        await ExecuteActionAsync(
+            () => CaseService.SuspendAsync(CaseId),
+            "Case suspended.");
+    }
+
+    private async Task ResolveAsync(CaseOutcome outcome)
+    {
+        await ExecuteActionAsync(
+            () => CaseService.ResolveAsync(CaseId, outcome),
+            $"Case resolved with outcome: {outcome}.");
+    }
+
+    private async Task OnPriorityChanged(ChangeEventArgs e)
+    {
+        if (Enum.TryParse<CasePriority>(e.Value?.ToString(), out var priority))
+        {
+            await ExecuteActionAsync(
+                () => CaseService.SetPriorityAsync(CaseId, priority),
+                $"Priority set to {priority}.");
+        }
+    }
+
+    private async Task AddNoteAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newNote)) return;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var userIdClaim = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userIdClaim is null || !Guid.TryParse(userIdClaim, out var userId))
+        {
+            _error = "Could not determine current user.";
+            return;
+        }
+
+        await ExecuteActionAsync(
+            () => CaseService.AddNoteAsync(CaseId, userId, _newNote),
+            "Note added.");
+        _newNote = "";
+    }
+
+    private async Task ExecuteActionAsync(Func<Task> action, string successMessage)
+    {
+        _processing = true;
+        _error = null;
+        _statusMessage = null;
+
+        try
+        {
+            await action();
+            _statusMessage = successMessage;
+            await LoadCaseAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _processing = false;
+        }
+    }
+
+    static string StatusBadgeClass(CaseStatus status) => status switch
+    {
+        CaseStatus.Reported => "bg-warning text-dark",
+        CaseStatus.Triaged => "bg-info text-dark",
+        CaseStatus.ActiveSearch => "bg-primary",
+        CaseStatus.Suspended => "bg-secondary",
+        CaseStatus.Resolved => "bg-success",
+        _ => "bg-light text-dark",
+    };
+
+    static string PriorityBadgeClass(CasePriority priority) => priority switch
+    {
+        CasePriority.Critical => "bg-danger",
+        CasePriority.High => "bg-warning text-dark",
+        CasePriority.Medium => "bg-info text-dark",
+        CasePriority.Low => "bg-secondary",
+        _ => "bg-light text-dark",
+    };
+}

@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using TA.Utils.Core.Diagnostics;
 using Timtek.Patterns.DataAccess.EFCore;
 using Timtek.SAR.Application.OrganisationManagement;
+using Timtek.SAR.Application.CaseManagement;
 using Timtek.SAR.Application.UserManagement;
 using Timtek.SAR.Domain.Entities;
 using Timtek.SAR.Infrastructure.DependencyInjection;
@@ -20,6 +21,7 @@ builder.Services.AddSarInfrastructure(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("SarDatabase") ?? "Data Source=sar.db"));
 builder.Services.AddScoped<IOrganisationService, OrganisationService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ICaseService, CaseService>();
 
 builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
     .AddCookie(IdentityConstants.ApplicationScheme, options =>
@@ -83,17 +85,21 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+else
+{
+    app.UseExceptionHandler();
+}
 
 app.UseHttpsRedirection();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseExceptionHandler();
 app.UseStatusCodePages();
 
 app.MapHealthChecks("/health");
 app.MapOrganisationEndpoints();
 app.MapAuthEndpoints();
 app.MapUserEndpoints();
+app.MapCaseEndpoints();
 
 app.Run();

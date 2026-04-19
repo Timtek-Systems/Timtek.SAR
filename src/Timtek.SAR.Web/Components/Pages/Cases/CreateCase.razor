@@ -1,0 +1,186 @@
+@page "/cases/create"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Timtek.SAR.Application.CaseManagement
+@using Timtek.SAR.Application.CaseManagement.Dtos
+@using Timtek.SAR.Application.OrganisationManagement
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject ICaseService CaseService
+@inject IOrganisationService OrganisationService
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Report New Case — Timtek SAR</PageTitle>
+
+<h2>Report New Case</h2>
+
+@if (_error is not null)
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+<EditForm Model="_model" OnValidSubmit="SubmitAsync" FormName="createCase">
+    <DataAnnotationsValidator />
+
+    <h5 class="mt-3 mb-2">Animal Details</h5>
+    <div class="row g-3 mb-3">
+        <div class="col-md-4">
+            <label class="form-label">Species *</label>
+            <InputText class="form-control" @bind-Value="_model.AnimalSpecies" />
+            <ValidationMessage For="() => _model.AnimalSpecies" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Breed</label>
+            <InputText class="form-control" @bind-Value="_model.AnimalBreed" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Colour</label>
+            <InputText class="form-control" @bind-Value="_model.AnimalColour" />
+        </div>
+    </div>
+    <div class="row g-3 mb-3">
+        <div class="col-md-4">
+            <label class="form-label">Size</label>
+            <InputText class="form-control" @bind-Value="_model.AnimalSize" />
+        </div>
+        <div class="col-md-8">
+            <label class="form-label">Distinguishing Features</label>
+            <InputTextArea class="form-control" @bind-Value="_model.AnimalDistinguishingFeatures" />
+        </div>
+    </div>
+
+    <h5 class="mt-3 mb-2">Location & Timing</h5>
+    <div class="row g-3 mb-3">
+        <div class="col-md-4">
+            <label class="form-label">Latitude *</label>
+            <InputNumber class="form-control" @bind-Value="_model.LastKnownLatitude" />
+            <ValidationMessage For="() => _model.LastKnownLatitude" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Longitude *</label>
+            <InputNumber class="form-control" @bind-Value="_model.LastKnownLongitude" />
+            <ValidationMessage For="() => _model.LastKnownLongitude" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Date/Time Last Seen *</label>
+            <InputDate Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="_model.DateTimeLastSeen" />
+            <ValidationMessage For="() => _model.DateTimeLastSeen" />
+        </div>
+    </div>
+
+    <h5 class="mt-3 mb-2">Owner Contact</h5>
+    <div class="row g-3 mb-3">
+        <div class="col-md-4">
+            <label class="form-label">Name *</label>
+            <InputText class="form-control" @bind-Value="_model.OwnerName" />
+            <ValidationMessage For="() => _model.OwnerName" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Phone</label>
+            <InputText class="form-control" @bind-Value="_model.OwnerPhone" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Email *</label>
+            <InputText class="form-control" @bind-Value="_model.OwnerEmail" />
+            <ValidationMessage For="() => _model.OwnerEmail" />
+        </div>
+    </div>
+
+    <h5 class="mt-3 mb-2">Notes</h5>
+    <div class="row g-3 mb-3">
+        <div class="col-md-6">
+            <label class="form-label">Medical Notes</label>
+            <InputTextArea class="form-control" rows="3" @bind-Value="_model.MedicalNotes" />
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Behavioural Notes</label>
+            <InputTextArea class="form-control" rows="3" @bind-Value="_model.BehaviouralNotes" />
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <button type="submit" class="btn btn-primary" disabled="@_submitting">
+            @if (_submitting) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            Report Case
+        </button>
+        <a href="/cases" class="btn btn-outline-secondary ms-2">Cancel</a>
+    </div>
+</EditForm>
+
+@code {
+    private CreateCaseModel _model = new();
+    private bool _submitting;
+    private string? _error;
+
+    private async Task SubmitAsync()
+    {
+        _submitting = true;
+        _error = null;
+
+        try
+        {
+            var org = await OrganisationService.GetFirstOrganisationAsync();
+            if (!org.Any())
+            {
+                _error = "No organisation configured.";
+                return;
+            }
+
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var userIdClaim = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim is null || !Guid.TryParse(userIdClaim, out var userId))
+            {
+                _error = "Could not determine current user.";
+                return;
+            }
+
+            var request = new CreateCaseRequest(
+                org.Single().Id,
+                userId,
+                _model.AnimalSpecies,
+                _model.AnimalBreed,
+                _model.AnimalColour,
+                _model.AnimalSize,
+                _model.AnimalDistinguishingFeatures,
+                null,
+                _model.LastKnownLatitude,
+                _model.LastKnownLongitude,
+                _model.DateTimeLastSeen,
+                _model.OwnerName,
+                _model.OwnerPhone,
+                _model.OwnerEmail,
+                _model.MedicalNotes,
+                _model.BehaviouralNotes);
+
+            var result = await CaseService.CreateAsync(request);
+            Navigation.NavigateTo($"/cases/{result.Id}");
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private sealed class CreateCaseModel
+    {
+        public string AnimalSpecies { get; set; } = "";
+        public string? AnimalBreed { get; set; }
+        public string? AnimalColour { get; set; }
+        public string? AnimalSize { get; set; }
+        public string? AnimalDistinguishingFeatures { get; set; }
+        public double LastKnownLatitude { get; set; }
+        public double LastKnownLongitude { get; set; }
+        public DateTime DateTimeLastSeen { get; set; } = DateTime.Now;
+        public string OwnerName { get; set; } = "";
+        public string? OwnerPhone { get; set; }
+        public string OwnerEmail { get; set; } = "";
+        public string? MedicalNotes { get; set; }
+        public string? BehaviouralNotes { get; set; }
+    }
+}
