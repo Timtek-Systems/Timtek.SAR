@@ -75,6 +75,22 @@ using (var scope = app.Services.CreateScope())
             if (!await roleManager.RoleExistsAsync(role))
                 await roleManager.CreateAsync(new ApplicationRole(role));
         }
+
+        // Seed default admin user
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        if (await userManager.FindByEmailAsync("admin@timtek.local") is null)
+        {
+            var admin = new ApplicationUser
+            {
+                UserName = "admin@timtek.local",
+                Email = "admin@timtek.local",
+                DisplayName = "System Administrator",
+                OrganisationId = db.Organisations.First().Id,
+                EmailConfirmed = true,
+            };
+            await userManager.CreateAsync(admin, "Admin1234");
+            await userManager.AddToRoleAsync(admin, "Administrator");
+        }
     }
     else
     {
