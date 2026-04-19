@@ -1,0 +1,6 @@
+@Timtek.SAR.Api_HostAddress = http://localhost:5104
+
+GET {{Timtek.SAR.Api_HostAddress}}/health
+Accept: application/json
+
+###

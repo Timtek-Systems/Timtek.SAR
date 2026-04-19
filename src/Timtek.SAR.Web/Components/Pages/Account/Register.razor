@@ -1,0 +1,94 @@
+@page "/register"
+@using Microsoft.AspNetCore.Identity
+@using Timtek.SAR.Application.UserManagement
+@using Timtek.SAR.Application.UserManagement.Dtos
+@inject IUserService UserService
+@inject NavigationManager Navigation
+
+<PageTitle>Register — Timtek SAR</PageTitle>
+
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <h2 class="mb-4">Register</h2>
+
+        @if (_errors.Count > 0)
+        {
+            <div class="alert alert-danger">
+                <ul class="mb-0">
+                    @foreach (var error in _errors)
+                    {
+                        <li>@error</li>
+                    }
+                </ul>
+            </div>
+        }
+
+        <EditForm Model="_model" OnValidSubmit="HandleRegister" FormName="register">
+            <DataAnnotationsValidator />
+            <div class="mb-3">
+                <label for="displayName" class="form-label">Display Name</label>
+                <InputText id="displayName" class="form-control" @bind-Value="_model.DisplayName" />
+                <ValidationMessage For="() => _model.DisplayName" />
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <InputText id="email" class="form-control" @bind-Value="_model.Email" />
+                <ValidationMessage For="() => _model.Email" />
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <InputText id="password" type="password" class="form-control" @bind-Value="_model.Password" />
+                <ValidationMessage For="() => _model.Password" />
+            </div>
+            <div class="mb-3">
+                <label for="confirmPassword" class="form-label">Confirm Password</label>
+                <InputText id="confirmPassword" type="password" class="form-control" @bind-Value="_model.ConfirmPassword" />
+                <ValidationMessage For="() => _model.ConfirmPassword" />
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Register</button>
+        </EditForm>
+
+        <p class="mt-3 text-center">
+            Already have an account? <a href="/login">Login</a>
+        </p>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    private RegisterModel _model { get; set; } = new();
+
+    private List<string> _errors = [];
+
+    private async Task HandleRegister()
+    {
+        _errors.Clear();
+
+        if (_model.Password != _model.ConfirmPassword)
+        {
+            _errors.Add("Passwords do not match.");
+            return;
+        }
+
+        // Use a default organisation for now; multi-org registration will be added later
+        var result = await UserService.RegisterAsync(new RegisterUserRequest(
+            _model.Email, _model.DisplayName, _model.Password, Guid.Empty));
+
+        if (result.Succeeded)
+        {
+            Navigation.NavigateTo("/login");
+        }
+        else
+        {
+            _errors.AddRange(result.Errors ?? []);
+        }
+    }
+
+    private sealed class RegisterModel
+    {
+        public string DisplayName { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Password { get; set; } = "";
+        public string ConfirmPassword { get; set; } = "";
+    }
+}

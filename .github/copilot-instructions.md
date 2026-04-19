@@ -28,6 +28,13 @@ This is an ASP.NET web application and API built with C#.
 - Prefer `IActionResult` or `Results` return types on endpoints; use typed results (`Results<Ok<T>, NotFound>`) where practical.
 - Read and understand existing code before modifying it. Respect established patterns in the project.
 
+## Blazor Component Design
+
+- Keep Blazor components thin: UI binding and event wiring only.
+- All business logic, validation, data transformation, and orchestration must live in injectable service classes, not in components or code-behind files.
+- Code-behind (`.razor.cs`) files should delegate immediately to services — never put logic worth testing in a component.
+- This maximises testability: services are unit tested with MSpec and FakeItEasy without needing to render components.
+
 ## Time
 
 - Inject `TimeProvider` and call `timeProvider.GetUtcNow().UtcDateTime`. Never use `DateTime.UtcNow` directly.

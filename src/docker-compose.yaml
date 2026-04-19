@@ -1,0 +1,11 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: timtek_sar
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: timtek_sar
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./persistent-volumes/postgres-data:/var/lib/postgresql/data

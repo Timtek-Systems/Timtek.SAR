@@ -1,0 +1,182 @@
+@page "/admin/organisation"
+@using Timtek.SAR.Application.OrganisationManagement
+@using Timtek.SAR.Domain.Entities
+@rendermode InteractiveServer
+@inject IOrganisationService OrganisationService
+
+<PageTitle>Organisation Settings</PageTitle>
+
+<h1>Organisation Settings</h1>
+
+@if (_loading)
+{
+    <p>Loading...</p>
+}
+else if (_organisation is null)
+{
+    <div class="alert alert-warning">No organisation found.</div>
+}
+else
+{
+    @if (_saved)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            Settings saved successfully.
+            <button type="button" class="btn-close" @onclick="() => _saved = false"></button>
+        </div>
+    }
+
+    @if (_error is not null)
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+
+    <EditForm Model="_organisation" OnValidSubmit="SaveAsync" FormName="organisationSettings">
+        <DataAnnotationsValidator />
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <label class="form-label">Organisation Name</label>
+                <input class="form-control" value="@_organisation.Name" disabled />
+            </div>
+        </div>
+
+        <h4>General Settings</h4>
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <label class="form-label">Default AO Radius (km)</label>
+                <InputNumber class="form-control" @bind-Value="_organisation.DefaultAoRadiusKm" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Extended Notification Radius (km)</label>
+                <InputNumber class="form-control" @bind-Value="_organisation.ExtendedNotificationRadiusKm" />
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <label class="form-label">Default Reputation Score</label>
+                <InputNumber class="form-control" @bind-Value="_organisation.DefaultReputationScore" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Minimum Reputation Threshold</label>
+                <InputNumber class="form-control" @bind-Value="_organisation.MinimumReputationThreshold" />
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <label class="form-label">Keeper Invitation Expiry (days)</label>
+                <InputNumber class="form-control" @bind-Value="_organisation.KeeperInvitationExpiryDays" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Keeper Retention (days)</label>
+                <InputNumber class="form-control" @bind-Value="_organisation.KeeperRetentionDays" />
+            </div>
+        </div>
+
+        <h4>Reputation Point Values</h4>
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <label class="form-label">Join Case</label>
+                <InputNumber class="form-control" @bind-Value="_organisation.ReputationPointValues.JoinCase" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Found Outcome</label>
+                <InputNumber class="form-control" @bind-Value="_organisation.ReputationPointValues.FoundOutcome" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Confirmed Sighting</label>
+                <InputNumber class="form-control" @bind-Value="_organisation.ReputationPointValues.ConfirmedSighting" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Evidence Upload</label>
+                <InputNumber class="form-control" @bind-Value="_organisation.ReputationPointValues.EvidenceUpload" />
+            </div>
+        </div>
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <label class="form-label">Evidence Upload Cap/Case</label>
+                <InputNumber class="form-control" @bind-Value="_organisation.ReputationPointValues.EvidenceUploadCapPerCase" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Track Upload</label>
+                <InputNumber class="form-control" @bind-Value="_organisation.ReputationPointValues.TrackUpload" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Sector Completion</label>
+                <InputNumber class="form-control" @bind-Value="_organisation.ReputationPointValues.SectorCompletion" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">First Case Bonus</label>
+                <InputNumber class="form-control" @bind-Value="_organisation.ReputationPointValues.FirstCaseBonus" />
+            </div>
+        </div>
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <label class="form-label">Missed In-Scope Case</label>
+                <InputNumber class="form-control" @bind-Value="_organisation.ReputationPointValues.MissedInScopeCase" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Removed From Case</label>
+                <InputNumber class="form-control" @bind-Value="_organisation.ReputationPointValues.RemovedFromCase" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Dismissed Sighting</label>
+                <InputNumber class="form-control" @bind-Value="_organisation.ReputationPointValues.DismissedSighting" />
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" disabled="@_saving">
+            @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            Save Settings
+        </button>
+    </EditForm>
+}
+
+@code {
+    private Organisation? _organisation;
+    private bool _loading = true;
+    private bool _saving;
+    private bool _saved;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var organisations = await OrganisationService.GetFirstOrganisationAsync();
+        _organisation = organisations.Any() ? organisations.Single() : null;
+        _loading = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_organisation is null) return;
+
+        _saving = true;
+        _saved = false;
+        _error = null;
+
+        try
+        {
+            await OrganisationService.UpdateSettingsAsync(_organisation.Id, org =>
+            {
+                org.DefaultAoRadiusKm = _organisation.DefaultAoRadiusKm;
+                org.DefaultReputationScore = _organisation.DefaultReputationScore;
+                org.MinimumReputationThreshold = _organisation.MinimumReputationThreshold;
+                org.ExtendedNotificationRadiusKm = _organisation.ExtendedNotificationRadiusKm;
+                org.KeeperInvitationExpiryDays = _organisation.KeeperInvitationExpiryDays;
+                org.KeeperRetentionDays = _organisation.KeeperRetentionDays;
+                org.ReputationPointValues = _organisation.ReputationPointValues;
+            });
+            _saved = true;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

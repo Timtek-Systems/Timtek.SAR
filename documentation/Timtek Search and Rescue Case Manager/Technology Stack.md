@@ -89,6 +89,7 @@ Timtek.SAR is built on .NET 10 with a Blazor Web App front end, ASP.NET Minimal 
 6. **MSpec + FakeItEasy** — BDD-style specifications with context-builder pattern for readable, maintainable tests aligned with team conventions.
 7. **SCSS over plain CSS** — Variables, mixins, and nesting keep stylesheets maintainable. Never commit hand-written `.css` files; all styles must originate from `.scss` sources.
 8. **TypeScript over JavaScript** — Static typing catches errors at compile time. Never commit hand-written `.js` files; all client-side code must originate from `.ts` sources.
+9. **Thin Blazor components for testability** — Blazor components contain only UI binding and event wiring. All business logic, validation, data transformation, and orchestration lives in injectable service classes that can be unit tested with MSpec and FakeItEasy without rendering components. Code-behind (`.razor.cs`) files should delegate immediately to services; never put logic worth testing in a component.
 
 ## NuGet Package Management
 

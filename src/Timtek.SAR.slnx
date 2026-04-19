@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="Timtek.SAR.Api/Timtek.SAR.Api.csproj" />
+  <Project Path="Timtek.SAR.Application/Timtek.SAR.Application.csproj" />
+  <Project Path="Timtek.SAR.Domain/Timtek.SAR.Domain.csproj" />
+  <Project Path="Timtek.SAR.Infrastructure/Timtek.SAR.Infrastructure.csproj" />
+  <Project Path="Timtek.SAR.Tests/Timtek.SAR.Tests.csproj" />
+  <Project Path="Timtek.SAR.Web/Timtek.SAR.Web.csproj" />
+</Solution>

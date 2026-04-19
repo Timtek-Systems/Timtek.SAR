@@ -72,3 +72,7 @@ documentation/**/backlog.csv
 **/rovo-token
 **/*token*
 !**/*.md
+
+# Docker persistent volumes
+persistent-volumes/
+test_*.db

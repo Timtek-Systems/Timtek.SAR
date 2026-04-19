@@ -1,0 +1,90 @@
+@page "/login"
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Identity
+@using Timtek.SAR.Domain.Entities
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager Navigation
+
+<PageTitle>Login — Timtek SAR</PageTitle>
+
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <h2 class="mb-4">Login</h2>
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert alert-danger">@_errorMessage</div>
+        }
+
+        <EditForm Model="_model" OnValidSubmit="HandleLogin" FormName="login">
+            <DataAnnotationsValidator />
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <InputText id="email" class="form-control" @bind-Value="_model.Email" />
+                <ValidationMessage For="() => _model.Email" />
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <InputText id="password" type="password" class="form-control" @bind-Value="_model.Password" />
+                <ValidationMessage For="() => _model.Password" />
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Login</button>
+        </EditForm>
+
+        <p class="mt-3 text-center">
+            Don't have an account? <a href="/register">Register</a>
+        </p>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    private LoginModel _model { get; set; } = new();
+
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private string? _errorMessage;
+
+    private async Task HandleLogin()
+    {
+        if (HttpContext is null) return;
+
+        var user = await UserManager.FindByEmailAsync(_model.Email);
+        if (user is null || !user.IsActive)
+        {
+            _errorMessage = "Invalid email or password.";
+            return;
+        }
+
+        var passwordValid = await UserManager.CheckPasswordAsync(user, _model.Password);
+        if (!passwordValid)
+        {
+            _errorMessage = "Invalid email or password.";
+            return;
+        }
+
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(ClaimTypes.Name, user.DisplayName),
+            new(ClaimTypes.Email, user.Email!),
+        };
+
+        var roles = await UserManager.GetRolesAsync(user);
+        claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
+
+        var identity = new ClaimsIdentity(claims, IdentityConstants.ApplicationScheme);
+        var principal = new ClaimsPrincipal(identity);
+        await HttpContext.SignInAsync(IdentityConstants.ApplicationScheme, principal);
+
+        Navigation.NavigateTo("/", forceLoad: true);
+    }
+
+    private sealed class LoginModel
+    {
+        public string Email { get; set; } = "";
+        public string Password { get; set; } = "";
+    }
+}
