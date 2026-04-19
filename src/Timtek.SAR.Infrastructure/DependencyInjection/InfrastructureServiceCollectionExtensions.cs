@@ -27,11 +27,12 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddIdentityCore<ApplicationUser>(options =>
             {
-                options.Password.RequiredLength = 8;
-                options.Password.RequireDigit = true;
-                options.Password.RequireLowercase = true;
-                options.Password.RequireUppercase = true;
+                options.Password.RequiredLength = 12;
+                options.Password.RequireDigit = false;
+                options.Password.RequireLowercase = false;
+                options.Password.RequireUppercase = false;
                 options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequiredUniqueChars = 1;
                 options.User.RequireUniqueEmail = true;
                 options.SignIn.RequireConfirmedEmail = false;
             })

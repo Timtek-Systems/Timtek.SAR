@@ -112,7 +112,7 @@ class When_registering_a_new_user
 }
 
 [Subject("User Service")]
-class When_registering_a_user_with_invalid_password
+class When_registering_a_user_with_invalid_passphrase
 {
     static UserServiceContextBuilder _context;
     static IUserService _service;

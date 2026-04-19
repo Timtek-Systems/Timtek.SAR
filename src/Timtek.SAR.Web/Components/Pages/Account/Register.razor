@@ -36,14 +36,18 @@
                 <ValidationMessage For="() => _model.Email" />
             </div>
             <div class="mb-3">
-                <label for="password" class="form-label">Password</label>
-                <InputText id="password" type="password" class="form-control" @bind-Value="_model.Password" />
-                <ValidationMessage For="() => _model.Password" />
+                <label for="passphrase" class="form-label">Pass-phrase</label>
+                <InputText id="passphrase" type="password" class="form-control" @bind-Value="_model.Passphrase" />
+                <div class="form-text">
+                    At least 12 characters. Try a book title, song lyric, or memorable phrase
+                    — include spaces and punctuation, e.g. <em>"The Cat in the Hat!"</em>
+                </div>
+                <ValidationMessage For="() => _model.Passphrase" />
             </div>
             <div class="mb-3">
-                <label for="confirmPassword" class="form-label">Confirm Password</label>
-                <InputText id="confirmPassword" type="password" class="form-control" @bind-Value="_model.ConfirmPassword" />
-                <ValidationMessage For="() => _model.ConfirmPassword" />
+                <label for="confirmPassphrase" class="form-label">Confirm Pass-phrase</label>
+                <InputText id="confirmPassphrase" type="password" class="form-control" @bind-Value="_model.ConfirmPassphrase" />
+                <ValidationMessage For="() => _model.ConfirmPassphrase" />
             </div>
             <button type="submit" class="btn btn-primary w-100">Register</button>
         </EditForm>
@@ -64,15 +68,15 @@
     {
         _errors.Clear();
 
-        if (_model.Password != _model.ConfirmPassword)
+        if (_model.Passphrase != _model.ConfirmPassphrase)
         {
-            _errors.Add("Passwords do not match.");
+            _errors.Add("Pass-phrases do not match.");
             return;
         }
 
         // Use a default organisation for now; multi-org registration will be added later
         var result = await UserService.RegisterAsync(new RegisterUserRequest(
-            _model.Email, _model.DisplayName, _model.Password, Guid.Empty));
+            _model.Email, _model.DisplayName, _model.Passphrase, Guid.Empty));
 
         if (result.Succeeded)
         {
@@ -88,7 +92,7 @@
     {
         public string DisplayName { get; set; } = "";
         public string Email { get; set; } = "";
-        public string Password { get; set; } = "";
-        public string ConfirmPassword { get; set; } = "";
+        public string Passphrase { get; set; } = "";
+        public string ConfirmPassphrase { get; set; } = "";
     }
 }

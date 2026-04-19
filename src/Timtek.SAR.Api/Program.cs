@@ -88,7 +88,7 @@ using (var scope = app.Services.CreateScope())
                 OrganisationId = db.Organisations.First().Id,
                 EmailConfirmed = true,
             };
-            await userManager.CreateAsync(admin, "Admin1234");
+            await userManager.CreateAsync(admin, "The Hitchhikers Guide to the Galaxy");
             await userManager.AddToRoleAsync(admin, "Administrator");
         }
     }

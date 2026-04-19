@@ -25,9 +25,9 @@
                 <ValidationMessage For="() => _model.Email" />
             </div>
             <div class="mb-3">
-                <label for="password" class="form-label">Password</label>
-                <InputText id="password" type="password" class="form-control" @bind-Value="_model.Password" />
-                <ValidationMessage For="() => _model.Password" />
+                <label for="passphrase" class="form-label">Pass-phrase</label>
+                <InputText id="passphrase" type="password" class="form-control" @bind-Value="_model.Passphrase" />
+                <ValidationMessage For="() => _model.Passphrase" />
             </div>
             <button type="submit" class="btn btn-primary w-100">Login</button>
         </EditForm>
@@ -54,14 +54,14 @@
         var user = await UserManager.FindByEmailAsync(_model.Email);
         if (user is null || !user.IsActive)
         {
-            _errorMessage = "Invalid email or password.";
+            _errorMessage = "Invalid email or pass-phrase.";
             return;
         }
 
-        var passwordValid = await UserManager.CheckPasswordAsync(user, _model.Password);
-        if (!passwordValid)
+        var passphraseValid = await UserManager.CheckPasswordAsync(user, _model.Passphrase);
+        if (!passphraseValid)
         {
-            _errorMessage = "Invalid email or password.";
+            _errorMessage = "Invalid email or pass-phrase.";
             return;
         }
 
@@ -85,6 +85,6 @@
     private sealed class LoginModel
     {
         public string Email { get; set; } = "";
-        public string Password { get; set; } = "";
+        public string Passphrase { get; set; } = "";
     }
 }

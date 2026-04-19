@@ -63,7 +63,7 @@ static class AuthApiTestFactory
 
         // Register an admin user
         await client.PostAsJsonAsync("/api/auth/register",
-            new RegisterRequest("admin@test.com", "Admin User", "P@ssw0rd1", organisationId));
+            new RegisterRequest("admin@test.com", "Admin User", "A valid test passphrase", organisationId));
 
         // Assign admin role via scope
         using var scope = factory.Services.CreateScope();
@@ -73,7 +73,7 @@ static class AuthApiTestFactory
 
         // Login
         await client.PostAsJsonAsync("/api/auth/login",
-            new LoginRequest("admin@test.com", "P@ssw0rd1"));
+            new LoginRequest("admin@test.com", "A valid test passphrase"));
 
         return client;
     }
@@ -100,7 +100,7 @@ class When_registering_a_user_via_the_api
     Because of = () =>
     {
         _response = _client.PostAsJsonAsync("/api/auth/register",
-            new RegisterRequest("john@example.com", "John Doe", "P@ssw0rd1", _organisationId)).GetAwaiter().GetResult();
+            new RegisterRequest("john@example.com", "John Doe", "A valid test passphrase", _organisationId)).GetAwaiter().GetResult();
         _body = _response.Content.ReadFromJsonAsync<RegisterResponse>().GetAwaiter().GetResult()!;
     };
 
@@ -116,7 +116,7 @@ class When_registering_a_user_via_the_api
 }
 
 [Subject("Auth API")]
-class When_registering_a_user_with_weak_password
+class When_registering_a_user_with_short_passphrase
 {
     static WebApplicationFactory<Program> _factory;
     static HttpClient _client;
@@ -162,13 +162,13 @@ class When_logging_in_with_valid_credentials
         _organisationId = AuthApiTestFactory.SeedOrganisationAsync(_factory).GetAwaiter().GetResult();
 
         _client.PostAsJsonAsync("/api/auth/register",
-            new RegisterRequest("john@example.com", "John Doe", "P@ssw0rd1", _organisationId)).GetAwaiter().GetResult();
+            new RegisterRequest("john@example.com", "John Doe", "A valid test passphrase", _organisationId)).GetAwaiter().GetResult();
     };
 
     Because of = () =>
     {
         _response = _client.PostAsJsonAsync("/api/auth/login",
-            new LoginRequest("john@example.com", "P@ssw0rd1")).GetAwaiter().GetResult();
+            new LoginRequest("john@example.com", "A valid test passphrase")).GetAwaiter().GetResult();
     };
 
     It should_return_ok = () => _response.StatusCode.ShouldEqual(HttpStatusCode.OK);
@@ -181,7 +181,7 @@ class When_logging_in_with_valid_credentials
 }
 
 [Subject("Auth API")]
-class When_logging_in_with_wrong_password
+class When_logging_in_with_wrong_passphrase
 {
     static WebApplicationFactory<Program> _factory;
     static HttpClient _client;
@@ -195,13 +195,13 @@ class When_logging_in_with_wrong_password
         _organisationId = AuthApiTestFactory.SeedOrganisationAsync(_factory).GetAwaiter().GetResult();
 
         _client.PostAsJsonAsync("/api/auth/register",
-            new RegisterRequest("john@example.com", "John Doe", "P@ssw0rd1", _organisationId)).GetAwaiter().GetResult();
+            new RegisterRequest("john@example.com", "John Doe", "A valid test passphrase", _organisationId)).GetAwaiter().GetResult();
     };
 
     Because of = () =>
     {
         _response = _client.PostAsJsonAsync("/api/auth/login",
-            new LoginRequest("john@example.com", "WrongPass1")).GetAwaiter().GetResult();
+            new LoginRequest("john@example.com", "Completely wrong passphrase")).GetAwaiter().GetResult();
     };
 
     It should_return_unauthorized = () => _response.StatusCode.ShouldEqual(HttpStatusCode.Unauthorized);
@@ -229,7 +229,7 @@ class When_logging_in_with_nonexistent_email
     Because of = () =>
     {
         _response = _client.PostAsJsonAsync("/api/auth/login",
-            new LoginRequest("nobody@example.com", "P@ssw0rd1")).GetAwaiter().GetResult();
+            new LoginRequest("nobody@example.com", "A valid test passphrase")).GetAwaiter().GetResult();
     };
 
     It should_return_unauthorized = () => _response.StatusCode.ShouldEqual(HttpStatusCode.Unauthorized);
@@ -262,7 +262,7 @@ class When_getting_a_user_as_admin
 
         // Register a second user to look up
         var regResponse = _client.PostAsJsonAsync("/api/auth/register",
-            new RegisterRequest("target@example.com", "Target User", "P@ssw0rd1", _organisationId)).GetAwaiter().GetResult();
+            new RegisterRequest("target@example.com", "Target User", "A valid test passphrase", _organisationId)).GetAwaiter().GetResult();
         _registered = regResponse.Content.ReadFromJsonAsync<RegisterResponse>().GetAwaiter().GetResult()!;
     };
 
@@ -325,7 +325,7 @@ class When_assigning_a_role_as_admin
         _client = AuthApiTestFactory.CreateAuthenticatedAdminClientAsync(_factory, _organisationId).GetAwaiter().GetResult();
 
         var regResponse = _client.PostAsJsonAsync("/api/auth/register",
-            new RegisterRequest("target@example.com", "Target User", "P@ssw0rd1", _organisationId)).GetAwaiter().GetResult();
+            new RegisterRequest("target@example.com", "Target User", "A valid test passphrase", _organisationId)).GetAwaiter().GetResult();
         _registered = regResponse.Content.ReadFromJsonAsync<RegisterResponse>().GetAwaiter().GetResult()!;
     };
 
@@ -362,7 +362,7 @@ class When_deactivating_a_user_as_admin
         _client = AuthApiTestFactory.CreateAuthenticatedAdminClientAsync(_factory, _organisationId).GetAwaiter().GetResult();
 
         var regResponse = _client.PostAsJsonAsync("/api/auth/register",
-            new RegisterRequest("target@example.com", "Target User", "P@ssw0rd1", _organisationId)).GetAwaiter().GetResult();
+            new RegisterRequest("target@example.com", "Target User", "A valid test passphrase", _organisationId)).GetAwaiter().GetResult();
         _registered = regResponse.Content.ReadFromJsonAsync<RegisterResponse>().GetAwaiter().GetResult()!;
     };
 
@@ -402,8 +402,8 @@ class When_a_deactivated_user_tries_to_login
 
         // Register a user
         var regResponse = _adminClient.PostAsJsonAsync("/api/auth/register",
-            new RegisterRequest("target@example.com", "Target User", "P@ssw0rd1", _organisationId)).GetAwaiter().GetResult();
-        _registered = regResponse.Content.ReadFromJsonAsync<RegisterResponse>().GetAwaiter().GetResult()!;
+            new RegisterRequest("target@example.com", "Target User", "A valid test passphrase", _organisationId)).GetAwaiter().GetResult();
+        _registered = regResponse.Content.ReadFromJsonAsync<RegisterResponse>().GetAwaiter().GetResult()!;;
 
         // Deactivate
         _adminClient.PutAsync($"/api/users/{_registered.UserId}/deactivate", null).GetAwaiter().GetResult();
@@ -414,7 +414,7 @@ class When_a_deactivated_user_tries_to_login
     Because of = () =>
     {
         _response = _loginClient.PostAsJsonAsync("/api/auth/login",
-            new LoginRequest("target@example.com", "P@ssw0rd1")).GetAwaiter().GetResult();
+            new LoginRequest("target@example.com", "A valid test passphrase")).GetAwaiter().GetResult();
     };
 
     It should_return_unauthorized = () => _response.StatusCode.ShouldEqual(HttpStatusCode.Unauthorized);

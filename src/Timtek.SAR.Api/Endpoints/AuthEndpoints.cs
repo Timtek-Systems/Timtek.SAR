@@ -16,7 +16,7 @@ public static class AuthEndpoints
         group.MapPost("/register", async (RegisterRequest request, IUserService userService) =>
         {
             var result = await userService.RegisterAsync(new RegisterUserRequest(
-                request.Email, request.DisplayName, request.Password, request.OrganisationId));
+                request.Email, request.DisplayName, request.Passphrase, request.OrganisationId));
 
             return result.Succeeded
                 ? Results.Created($"/api/users/{result.UserId}", new RegisterResponse(true, result.UserId))
@@ -30,8 +30,8 @@ public static class AuthEndpoints
             if (user is null || !user.IsActive)
                 return Results.Unauthorized();
 
-            var passwordValid = await userManager.CheckPasswordAsync(user, request.Password);
-            if (!passwordValid)
+            var passphraseValid = await userManager.CheckPasswordAsync(user, request.Passphrase);
+            if (!passphraseValid)
                 return Results.Unauthorized();
 
             var claims = new List<Claim>

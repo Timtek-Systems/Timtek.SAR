@@ -20,7 +20,7 @@ public sealed class UserService(
             OrganisationId = request.OrganisationId,
         };
 
-        var result = await userManager.CreateAsync(user, request.Password);
+        var result = await userManager.CreateAsync(user, request.Passphrase);
 
         return result.Succeeded
             ? new UserRegistrationResult(true, user.Id)

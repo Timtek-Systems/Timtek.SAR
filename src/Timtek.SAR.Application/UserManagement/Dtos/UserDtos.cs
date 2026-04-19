@@ -3,7 +3,7 @@ namespace Timtek.SAR.Application.UserManagement.Dtos;
 public sealed record RegisterUserRequest(
     string Email,
     string DisplayName,
-    string Password,
+    string Passphrase,
     Guid OrganisationId);
 
 public sealed record UserRegistrationResult(
