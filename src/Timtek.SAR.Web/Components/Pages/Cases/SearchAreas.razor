@@ -1,0 +1,303 @@
+@page "/cases/{CaseId:guid}/search-areas"
+@using Microsoft.AspNetCore.Authorization
+@using Timtek.SAR.Application.SearchAreaManagement
+@using Timtek.SAR.Application.SearchAreaManagement.Dtos
+@using Timtek.SAR.Domain.Enums
+@using Timtek.SAR.Web.Components.Shared
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject ISearchAreaService SearchAreaService
+@inject NavigationManager Navigation
+
+<PageTitle>Search Areas — Timtek SAR</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Search Areas</h2>
+    <a href="/cases/@CaseId" class="btn btn-outline-secondary">Back to Case</a>
+</div>
+
+@if (_error is not null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        @_error
+        <button type="button" class="btn-close" @onclick="() => _error = null"></button>
+    </div>
+}
+
+@if (_statusMessage is not null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @_statusMessage
+        <button type="button" class="btn-close" @onclick="() => _statusMessage = null"></button>
+    </div>
+}
+
+<!-- Create search area form -->
+<div class="card mb-3">
+    <div class="card-header">Define New Search Area</div>
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Name</label>
+                <InputText class="form-control" @bind-Value="_newAreaName" placeholder="e.g. River Bank Zone" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Type</label>
+                <select class="form-select" @bind="_newAreaType">
+                    @foreach (var t in Enum.GetValues<SearchAreaType>())
+                    {
+                        <option value="@t">@t</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">GeoJSON Geometry</label>
+                <InputTextArea class="form-control" @bind-Value="_newAreaGeoJson" rows="1" placeholder='{"type":"Polygon","coordinates":...}' />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Radius (m)</label>
+                <InputNumber class="form-control" @bind-Value="_newAreaRadius" disabled="@(_newAreaType != SearchAreaType.Circle)" />
+            </div>
+            <div class="col-md-1">
+                <button class="btn btn-primary w-100" @onclick="CreateAreaAsync" disabled="@_processing">Add</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search areas list -->
+@if (_loading)
+{
+    <p>Loading search areas…</p>
+}
+else if (_areas.Count == 0)
+{
+    <div class="alert alert-info">No search areas defined for this case yet.</div>
+}
+else
+{
+    @foreach (var area in _areas)
+    {
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>@area.Name</strong>
+                    <span class="badge bg-secondary ms-2">@area.AreaType</span>
+                    @if (area.RadiusMetres.HasValue)
+                    {
+                        <span class="badge bg-info ms-1">@area.RadiusMetres m radius</span>
+                    }
+                    <small class="text-muted ms-2">@area.Sectors.Count sector(s)</small>
+                </div>
+                <div class="d-flex gap-1">
+                    <a href="/api/search-areas/@area.Id/export" target="_blank" class="btn btn-sm btn-outline-info" title="Export GeoJSON">Export</a>
+                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAreaAsync(area.Id)" disabled="@_processing">Delete</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Sectors table -->
+                @if (area.Sectors.Count > 0)
+                {
+                    <table class="table table-sm table-hover mb-2">
+                        <thead>
+                            <tr>
+                                <th>Sector</th>
+                                <th>Status</th>
+                                <th>Assigned To</th>
+                                <th style="width:200px">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var sector in area.Sectors)
+                            {
+                                <tr>
+                                    <td>@sector.Name</td>
+                                    <td><span class="badge @SectorStatusBadge(sector.Status)">@sector.Status</span></td>
+                                    <td>@(sector.AssignedToUserId.HasValue ? sector.AssignedToUserId.Value.ToString()[..8] + "…" : "—")</td>
+                                    <td>
+                                        @if (sector.Status == SectorStatus.NotStarted || sector.Status == SectorStatus.NeedsResearch)
+                                        {
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => UpdateSectorStatusAsync(sector.Id, SectorStatus.InProgress)" disabled="@_processing">Start</button>
+                                        }
+                                        @if (sector.Status == SectorStatus.InProgress)
+                                        {
+                                            <button class="btn btn-sm btn-outline-success" @onclick="() => UpdateSectorStatusAsync(sector.Id, SectorStatus.Completed)" disabled="@_processing">Complete</button>
+                                            <button class="btn btn-sm btn-outline-warning" @onclick="() => UpdateSectorStatusAsync(sector.Id, SectorStatus.NeedsResearch)" disabled="@_processing">Needs Re-search</button>
+                                        }
+                                        @if (sector.Status == SectorStatus.Completed)
+                                        {
+                                            <button class="btn btn-sm btn-outline-warning" @onclick="() => UpdateSectorStatusAsync(sector.Id, SectorStatus.NeedsResearch)" disabled="@_processing">Needs Re-search</button>
+                                        }
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteSectorAsync(sector.Id)" disabled="@_processing">×</button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+
+                <!-- Add sector form -->
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <InputText class="form-control form-control-sm" @bind-Value="_newSectorName" placeholder="Sector name" />
+                    </div>
+                    <div class="col-md-6">
+                        <InputTextArea class="form-control form-control-sm" @bind-Value="_newSectorGeoJson" rows="1" placeholder="Sector GeoJSON geometry" />
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-sm btn-outline-primary" @onclick="() => AddSectorAsync(area.Id)" disabled="@_processing">Add Sector</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public Guid CaseId { get; set; }
+
+    private List<SearchAreaDto> _areas = [];
+    private bool _loading = true;
+    private bool _processing;
+    private string? _error;
+    private string? _statusMessage;
+
+    private string _newAreaName = "";
+    private SearchAreaType _newAreaType = SearchAreaType.Polygon;
+    private string _newAreaGeoJson = "";
+    private double? _newAreaRadius;
+
+    private string _newSectorName = "";
+    private string _newSectorGeoJson = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAreasAsync();
+    }
+
+    private async Task LoadAreasAsync()
+    {
+        _loading = true;
+        _areas = (await SearchAreaService.GetByCaseIdAsync(CaseId)).ToList();
+        _loading = false;
+    }
+
+    private async Task CreateAreaAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newAreaName) || string.IsNullOrWhiteSpace(_newAreaGeoJson)) return;
+
+        _processing = true;
+        _error = null;
+        try
+        {
+            await SearchAreaService.CreateAsync(new CreateSearchAreaRequest(
+                CaseId, _newAreaName, _newAreaType, _newAreaGeoJson, _newAreaRadius));
+            _newAreaName = "";
+            _newAreaGeoJson = "";
+            _newAreaRadius = null;
+            _statusMessage = "Search area created.";
+            await LoadAreasAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _processing = false;
+        }
+    }
+
+    private async Task DeleteAreaAsync(Guid areaId)
+    {
+        _processing = true;
+        _error = null;
+        try
+        {
+            await SearchAreaService.DeleteAsync(areaId);
+            _statusMessage = "Search area deleted.";
+            await LoadAreasAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _processing = false;
+        }
+    }
+
+    private async Task AddSectorAsync(Guid areaId)
+    {
+        if (string.IsNullOrWhiteSpace(_newSectorName) || string.IsNullOrWhiteSpace(_newSectorGeoJson)) return;
+
+        _processing = true;
+        _error = null;
+        try
+        {
+            await SearchAreaService.AddSectorAsync(areaId, new AddSectorRequest(_newSectorName, _newSectorGeoJson));
+            _newSectorName = "";
+            _newSectorGeoJson = "";
+            _statusMessage = "Sector added.";
+            await LoadAreasAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _processing = false;
+        }
+    }
+
+    private async Task UpdateSectorStatusAsync(Guid sectorId, SectorStatus status)
+    {
+        _processing = true;
+        _error = null;
+        try
+        {
+            await SearchAreaService.UpdateSectorStatusAsync(sectorId, status);
+            _statusMessage = $"Sector status updated to {status}.";
+            await LoadAreasAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _processing = false;
+        }
+    }
+
+    private async Task DeleteSectorAsync(Guid sectorId)
+    {
+        _processing = true;
+        _error = null;
+        try
+        {
+            await SearchAreaService.DeleteSectorAsync(sectorId);
+            _statusMessage = "Sector deleted.";
+            await LoadAreasAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _processing = false;
+        }
+    }
+
+    static string SectorStatusBadge(SectorStatus status) => status switch
+    {
+        SectorStatus.NotStarted => "bg-secondary",
+        SectorStatus.InProgress => "bg-primary",
+        SectorStatus.Completed => "bg-success",
+        SectorStatus.NeedsResearch => "bg-warning text-dark",
+        _ => "bg-light text-dark",
+    };
+}

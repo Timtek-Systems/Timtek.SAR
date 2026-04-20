@@ -38,7 +38,10 @@ else
                 <span class="badge bg-dark fs-6 ms-1">@_case.Outcome</span>
             }
         </div>
-        <a href="/cases" class="btn btn-outline-secondary">Back to Cases</a>
+        <div class="d-flex gap-2">
+            <a href="/cases/@CaseId/search-areas" class="btn btn-outline-primary">Search Areas</a>
+            <a href="/cases" class="btn btn-outline-secondary">Back to Cases</a>
+        </div>
     </div>
 
     @if (_statusMessage is not null)

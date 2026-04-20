@@ -24,6 +24,10 @@ public static class InfrastructureServiceCollectionExtensions
             sp.GetRequiredService<SarUnitOfWork>().Cases);
         services.AddScoped<IRepository<CaseActivityLog, Guid>>(sp =>
             sp.GetRequiredService<SarUnitOfWork>().CaseActivityLogs);
+        services.AddScoped<IRepository<SearchArea, Guid>>(sp =>
+            sp.GetRequiredService<SarUnitOfWork>().SearchAreas);
+        services.AddScoped<IRepository<Sector, Guid>>(sp =>
+            sp.GetRequiredService<SarUnitOfWork>().Sectors);
 
         services.AddIdentityCore<ApplicationUser>(options =>
             {

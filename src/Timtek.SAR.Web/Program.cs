@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TA.Utils.Core.Diagnostics;
 using Timtek.SAR.Application.CaseManagement;
 using Timtek.SAR.Application.OrganisationManagement;
+using Timtek.SAR.Application.SearchAreaManagement;
 using Timtek.SAR.Application.UserManagement;
 using Timtek.SAR.Domain.Entities;
 using Timtek.SAR.Infrastructure.DependencyInjection;
@@ -20,6 +21,7 @@ builder.Services.AddSarInfrastructure(options =>
 builder.Services.AddScoped<IOrganisationService, OrganisationService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ICaseService, CaseService>();
+builder.Services.AddScoped<ISearchAreaService, SearchAreaService>();
 builder.Services.AddWhat3Words(builder.Configuration["What3Words:ApiKey"]);
 
 builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
