@@ -1,7 +1,9 @@
 {
-    "alwaysUpdateLinks": true,
-    "newLinkFormat": "relative",
-    "useMarkdownLinks": false,
-    "showLineNumber": true,
-    "communityPlugins": true
+  "interfaceFontSize": 14,
+  "alwaysUpdateLinks": true,
+  "newLinkFormat": "relative",
+  "useMarkdownLinks": false,
+  "showLineNumber": true,
+  "communityPlugins": true,
+  "readableLineLength": false
 }

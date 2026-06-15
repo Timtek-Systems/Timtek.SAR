@@ -1,3 +1,5 @@
 [
-    "obsidian-definition-list"
+  "obsidian-definition-list",
+  "print",
+  "obsidian-pandoc"
 ]
